@@ -7,13 +7,30 @@ on:
       - main
 
 jobs:
+  # Reusable workflow: runs on ubuntu-latest, returns outputs
+  system-preflight:
+    uses: ./.github/workflows/system-check.yaml
+    with:
+      check_docker: true
+      check_disk_threshold: 95
+
   runner-check:
     name: Runner Connectivity Check
+    needs: system-preflight
     runs-on:
       - self-hosted
       - Linux
       - ARM64
     steps:
+      - name: Show reusable workflow outputs
+        run: |
+          echo "--- Outputs from reusable system-check workflow (ran on ubuntu-latest) ---"
+          echo "check_passed=${{ needs.system-preflight.outputs.check_passed }}"
+          echo "disk_free=${{ needs.system-preflight.outputs.disk_free }}"
+          echo "disk_percent=${{ needs.system-preflight.outputs.disk_percent }}"
+          echo "mem_available=${{ needs.system-preflight.outputs.mem_available }}"
+          echo "docker_status=${{ needs.system-preflight.outputs.docker_status }}"
+          echo "timestamp=${{ needs.system-preflight.outputs.timestamp }}"
       - name: Show runner info
         run: |
           echo "Runner is online"

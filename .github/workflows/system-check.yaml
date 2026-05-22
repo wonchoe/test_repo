@@ -1,0 +1,98 @@
+name: System Check (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      check_docker:
+        description: "Whether to check Docker status"
+        type: boolean
+        default: true
+      check_disk_threshold:
+        description: "Disk usage % threshold to fail"
+        type: number
+        default: 95
+    outputs:
+      disk_free:
+        description: "Free disk space"
+        value: ${{ jobs.system-check.outputs.disk_free }}
+      disk_percent:
+        description: "Disk usage percentage"
+        value: ${{ jobs.system-check.outputs.disk_percent }}
+      mem_available:
+        description: "Available memory"
+        value: ${{ jobs.system-check.outputs.mem_available }}
+      docker_status:
+        description: "Docker daemon status"
+        value: ${{ jobs.system-check.outputs.docker_status }}
+      check_passed:
+        description: "Whether all checks passed"
+        value: ${{ jobs.system-check.outputs.check_passed }}
+      timestamp:
+        description: "UTC timestamp of the check"
+        value: ${{ jobs.system-check.outputs.timestamp }}
+
+jobs:
+  system-check:
+    name: "🔒 System Diagnostics"
+    runs-on: ubuntu-latest
+    outputs:
+      disk_free: ${{ steps.check.outputs.disk_free }}
+      disk_percent: ${{ steps.check.outputs.disk_percent }}
+      mem_available: ${{ steps.check.outputs.mem_available }}
+      docker_status: ${{ steps.check.outputs.docker_status }}
+      check_passed: ${{ steps.check.outputs.check_passed }}
+      timestamp: ${{ steps.check.outputs.timestamp }}
+    steps:
+      - name: Run system diagnostics
+        id: check
+        run: |
+          echo "🔒 Running System Diagnostics..."
+
+          # Disk
+          DISK_FREE=$(df -h / | awk 'NR==2 {print $4}')
+          DISK_PERCENT=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
+          echo "📁 Disk: ${DISK_FREE} free (${DISK_PERCENT}% used)"
+
+          # Memory
+          MEM_AVAILABLE=$(free -h | awk '/Mem:/ {print $7}')
+          echo "🧠 Memory: ${MEM_AVAILABLE} available"
+
+          # Docker
+          DOCKER_STATUS="unavailable"
+          if command -v docker &>/dev/null; then
+            if docker info &>/dev/null 2>&1; then
+              DOCKER_STATUS="running"
+            else
+              DOCKER_STATUS="installed-not-running"
+            fi
+          fi
+          echo "🐳 Docker: ${DOCKER_STATUS}"
+
+          # Threshold check
+          CHECK_PASSED="true"
+          if [ "$DISK_PERCENT" -ge "${{ inputs.check_disk_threshold }}" ]; then
+            echo "::warning::Disk usage ${DISK_PERCENT}% exceeds threshold ${{ inputs.check_disk_threshold }}%"
+            CHECK_PASSED="false"
+          fi
+
+          if [ "${{ inputs.check_docker }}" = "true" ] && [ "$DOCKER_STATUS" != "running" ]; then
+            echo "::warning::Docker is not running: ${DOCKER_STATUS}"
+          fi
+
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          # Set outputs
+          echo "disk_free=${DISK_FREE}" >> "$GITHUB_OUTPUT"
+          echo "disk_percent=${DISK_PERCENT}" >> "$GITHUB_OUTPUT"
+          echo "mem_available=${MEM_AVAILABLE}" >> "$GITHUB_OUTPUT"
+          echo "docker_status=${DOCKER_STATUS}" >> "$GITHUB_OUTPUT"
+          echo "check_passed=${CHECK_PASSED}" >> "$GITHUB_OUTPUT"
+          echo "timestamp=${TIMESTAMP}" >> "$GITHUB_OUTPUT"
+
+          echo ""
+          if [ "$CHECK_PASSED" = "true" ]; then
+            echo "✅ All checks passed"
+          else
+            echo "❌ Some checks failed"
+            exit 1
+          fi
