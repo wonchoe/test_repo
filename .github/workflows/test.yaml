@@ -21,9 +21,20 @@ jobs:
           echo "User: $(whoami)"
           uname -a
 
-      - name: Show automatic prehook env
+      - name: Use system hook outputs (injected via GITHUB_ENV automatically)
         run: |
-          echo "PREHOOK_EXECUTED=${PREHOOK_EXECUTED:-}"
-          echo "PREHOOK_TIME_UTC=${PREHOOK_TIME_UTC:-}"
-          echo "PREHOOK_RUNNER_NAME=${PREHOOK_RUNNER_NAME:-}"
-          echo "PREHOOK_HOST=${PREHOOK_HOST:-}"
+          echo "--- Variables injected by runner hook (user did NOT define these) ---"
+          echo "RUNNER_HOOK_EXECUTED=$RUNNER_HOOK_EXECUTED"
+          echo "RUNNER_HOOK_TIME_UTC=$RUNNER_HOOK_TIME_UTC"
+          echo "RUNNER_HOOK_NAME=$RUNNER_HOOK_NAME"
+          echo "RUNNER_HOOK_HOST=$RUNNER_HOOK_HOST"
+          echo "RUNNER_HOOK_SYSTEM_CHECK=$RUNNER_HOOK_SYSTEM_CHECK"
+          echo "RUNNER_HOOK_SYSTEM_DETAILS=$RUNNER_HOOK_SYSTEM_DETAILS"
+          echo "RUNNER_HOOK_DISK_FREE_MB=$RUNNER_HOOK_DISK_FREE_MB"
+          echo "RUNNER_HOOK_DOCKER=$RUNNER_HOOK_DOCKER"
+
+      - name: Fail if system check not passed
+        if: env.RUNNER_HOOK_SYSTEM_CHECK != 'passed'
+        run: |
+          echo "::error::System pre-flight check failed: $RUNNER_HOOK_SYSTEM_DETAILS"
+          exit 1
