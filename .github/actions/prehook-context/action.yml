@@ -1,0 +1,49 @@
+name: Prehook Context
+
+description: Reads runner prehook context file and exposes values as outputs.
+
+inputs:
+  context-file:
+    description: Absolute path to prehook context file on the runner
+    required: false
+    default: /home/ubuntu/test-actions-runner/_work/_prehook_context/latest.env
+
+outputs:
+  prehook_executed:
+    description: Whether prehook context indicates execution
+    value: ${{ steps.read.outputs.prehook_executed }}
+  prehook_time_utc:
+    description: UTC timestamp from prehook
+    value: ${{ steps.read.outputs.prehook_time_utc }}
+  prehook_runner_name:
+    description: Runner name captured by prehook
+    value: ${{ steps.read.outputs.prehook_runner_name }}
+  prehook_host:
+    description: Host captured by prehook
+    value: ${{ steps.read.outputs.prehook_host }}
+
+runs:
+  using: composite
+  steps:
+    - id: read
+      shell: bash
+      run: |
+        set -euo pipefail
+        file="${{ inputs.context-file }}"
+
+        if [[ ! -f "$file" ]]; then
+          echo "prehook_executed=false" >> "$GITHUB_OUTPUT"
+          echo "prehook_time_utc=" >> "$GITHUB_OUTPUT"
+          echo "prehook_runner_name=" >> "$GITHUB_OUTPUT"
+          echo "prehook_host=" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        set -a
+        source "$file"
+        set +a
+
+        echo "prehook_executed=${PREHOOK_EXECUTED:-false}" >> "$GITHUB_OUTPUT"
+        echo "prehook_time_utc=${PREHOOK_TIME_UTC:-}" >> "$GITHUB_OUTPUT"
+        echo "prehook_runner_name=${PREHOOK_RUNNER_NAME:-}" >> "$GITHUB_OUTPUT"
+        echo "prehook_host=${PREHOOK_HOST:-}" >> "$GITHUB_OUTPUT"

@@ -1,0 +1,52 @@
+name: Prehook Integration Demo
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/prehook-integration-demo.yaml
+      - .github/actions/prehook-context/action.yml
+      - ops/runner-hooks/job-started.sh
+
+jobs:
+  bootstrap:
+    name: Bootstrap Contract (GitHub-hosted)
+    runs-on: ubuntu-latest
+    outputs:
+      required_context_file: ${{ steps.contract.outputs.required_context_file }}
+    steps:
+      - id: contract
+        run: |
+          echo "required_context_file=/home/ubuntu/test-actions-runner/_work/_prehook_context/latest.env" >> "$GITHUB_OUTPUT"
+
+  user-job:
+    name: User Job With Prehook Outputs
+    needs: bootstrap
+    runs-on:
+      - self-hosted
+      - Linux
+      - ARM64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read prehook context
+        id: prehook
+        uses: ./.github/actions/prehook-context
+        with:
+          context-file: ${{ needs.bootstrap.outputs.required_context_file }}
+
+      - name: Print outputs for user job
+        run: |
+          echo "prehook_executed=${{ steps.prehook.outputs.prehook_executed }}"
+          echo "prehook_time_utc=${{ steps.prehook.outputs.prehook_time_utc }}"
+          echo "prehook_runner_name=${{ steps.prehook.outputs.prehook_runner_name }}"
+          echo "prehook_host=${{ steps.prehook.outputs.prehook_host }}"
+
+      - name: Enforce prehook execution
+        if: ${{ steps.prehook.outputs.prehook_executed != 'true' }}
+        run: |
+          echo "Prehook context was not found or not executed"
+          exit 1
