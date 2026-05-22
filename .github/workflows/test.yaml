@@ -11,7 +11,8 @@ jobs:
     name: Runner Connectivity Check
     runs-on:
       - self-hosted
-      - my-test-runner
+      - Linux
+      - ARM64
     steps:
       - name: Show runner info
         run: |
