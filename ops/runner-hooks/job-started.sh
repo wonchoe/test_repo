@@ -5,6 +5,7 @@ RUNNER_ROOT="${RUNNER_ROOT:-$HOME/test-actions-runner}"
 CONTEXT_DIR="$RUNNER_ROOT/_work/_prehook_context"
 CONTEXT_FILE="$CONTEXT_DIR/latest.env"
 LOG_FILE="$RUNNER_ROOT/hooks/job-started.log"
+RUNTIME_ENV_FILE="$RUNNER_ROOT/hooks/prehook-runtime.env"
 
 mkdir -p "$CONTEXT_DIR"
 
@@ -28,3 +29,14 @@ PREHOOK_TIME_EPOCH=$EPOCH_NOW
 PREHOOK_RUNNER_NAME=$RUNNER_NAME_VALUE
 PREHOOK_HOST=$HOST_VALUE
 EOF
+
+tmp_runtime_file="${RUNTIME_ENV_FILE}.tmp"
+cat > "$tmp_runtime_file" <<EOF
+PREHOOK_EXECUTED=true
+PREHOOK_TIME_UTC=$UTC_NOW
+PREHOOK_TIME_EPOCH=$EPOCH_NOW
+PREHOOK_RUNNER_NAME=$RUNNER_NAME_VALUE
+PREHOOK_HOST=$HOST_VALUE
+EOF
+chmod 644 "$tmp_runtime_file"
+mv "$tmp_runtime_file" "$RUNTIME_ENV_FILE"

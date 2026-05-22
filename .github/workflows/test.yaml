@@ -20,3 +20,10 @@ jobs:
           echo "Hostname: $(hostname)"
           echo "User: $(whoami)"
           uname -a
+
+      - name: Show automatic prehook env
+        run: |
+          echo "PREHOOK_EXECUTED=${PREHOOK_EXECUTED:-}"
+          echo "PREHOOK_TIME_UTC=${PREHOOK_TIME_UTC:-}"
+          echo "PREHOOK_RUNNER_NAME=${PREHOOK_RUNNER_NAME:-}"
+          echo "PREHOOK_HOST=${PREHOOK_HOST:-}"
