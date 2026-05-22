@@ -33,8 +33,21 @@ jobs:
           echo "RUNNER_HOOK_DISK_FREE_MB=$RUNNER_HOOK_DISK_FREE_MB"
           echo "RUNNER_HOOK_DOCKER=$RUNNER_HOOK_DOCKER"
 
-      - name: Fail if system check not passed
-        if: env.RUNNER_HOOK_SYSTEM_CHECK != 'passed'
+      - name: Use SYSTEM STEP outputs (from custom runner binary)
         run: |
-          echo "::error::System pre-flight check failed: $RUNNER_HOOK_SYSTEM_DETAILS"
+          echo "--- Variables injected by CUSTOM SYSTEM STEP (separate visible step) ---"
+          echo "SYSTEM_CHECK_PASSED=$SYSTEM_CHECK_PASSED"
+          echo "SYSTEM_DISK_FREE=$SYSTEM_DISK_FREE"
+          echo "SYSTEM_DISK_PERCENT=$SYSTEM_DISK_PERCENT"
+          echo "SYSTEM_MEM_FREE=$SYSTEM_MEM_FREE"
+          echo "SYSTEM_MEM_TOTAL=$SYSTEM_MEM_TOTAL"
+          echo "SYSTEM_DOCKER_STATUS=$SYSTEM_DOCKER_STATUS"
+          echo "SYSTEM_DOCKER_CONTAINERS=$SYSTEM_DOCKER_CONTAINERS"
+          echo "SYSTEM_LOAD=$SYSTEM_LOAD"
+          echo "SYSTEM_CHECK_TIMESTAMP=$SYSTEM_CHECK_TIMESTAMP"
+
+      - name: Fail if system check not passed
+        if: env.SYSTEM_CHECK_PASSED != 'true'
+        run: |
+          echo "::error::System step check failed!"
           exit 1
