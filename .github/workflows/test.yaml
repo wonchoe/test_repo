@@ -1,0 +1,21 @@
+name: Test Self-Hosted Runner
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  runner-check:
+    name: Runner Connectivity Check
+    runs-on:
+      - self-hosted
+      - my-test-runner
+    steps:
+      - name: Show runner info
+        run: |
+          echo "Runner is online"
+          echo "Hostname: $(hostname)"
+          echo "User: $(whoami)"
+          uname -a
